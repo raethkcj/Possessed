@@ -1,0 +1,7 @@
+﻿## Interface: 20504
+## Interface-Classic: 11403
+## Title: Possessed
+## Author: raethkcj
+## SavedVariables: PossessedDB
+
+Possessed.lua
