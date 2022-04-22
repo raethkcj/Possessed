@@ -3,5 +3,6 @@
 ## Title: Possessed
 ## Author: raethkcj
 ## SavedVariables: PossessedDB
+## X-WoWI-ID: 26279
 
 Possessed.lua
