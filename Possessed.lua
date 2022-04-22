@@ -402,14 +402,19 @@ if not InCombatLockdown() then
 					defaults[i].type = button:GetAttribute("type")
 					defaults[i].action = button:GetAttribute("action")
 					defaults[i].unit = button:GetAttribute("unit")
+					defaults[i].showgrid = button:GetAttribute("showgrid")
 
 					button:SetAttribute("type", "pet")
 					button:SetAttribute("action", i)
 					button:SetAttribute("unit", nil)
+					button:SetAttribute("showgrid", 1)
+
+					button:Show()
 				elseif defaults[i] then
 					button:SetAttribute("type", defaults[i].type)
 					button:SetAttribute("action", defaults[i].action)
 					button:SetAttribute("unit", defaults[i].unit)
+					button:SetAttribute("showgrid", defaults[i].showgrid)
 				end
 			end
 		end
