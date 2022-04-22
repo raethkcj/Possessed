@@ -1,6 +1,6 @@
 local addonName, addonTable = ...
 
-local handler = CreateFrame("Frame", nil, nil, "SecureHandlerAttributeTemplate")
+local handler = CreateFrame("Frame", addonName .. "SecureHandler", nil, "SecureHandlerAttributeTemplate")
 
 local channels = {
 	[GetSpellInfo(605)]   = true, -- Mind Control (Priest)
