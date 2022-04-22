@@ -399,17 +399,14 @@ if not InCombatLockdown() then
 				local button = self:GetFrameRef("ActionButton" .. i)
 				if value then
 					defaults[i] = defaults[i] or newtable()
-					--defaults[i].id = button:GetID()
 					defaults[i].type = button:GetAttribute("type")
 					defaults[i].action = button:GetAttribute("action")
 					defaults[i].unit = button:GetAttribute("unit")
 
-					--button:SetID(0)
 					button:SetAttribute("type", "pet")
 					button:SetAttribute("action", i)
 					button:SetAttribute("unit", nil)
 				elseif defaults[i] then
-					--button:SetID(defaults[i].id)
 					button:SetAttribute("type", defaults[i].type)
 					button:SetAttribute("action", defaults[i].action)
 					button:SetAttribute("unit", defaults[i].unit)
