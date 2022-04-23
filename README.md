@@ -5,7 +5,7 @@ This addon emulates retail WoW's possession bar by replacing your primary action
 Currently works with the following possessions:
 * Priest's Mind Control
 * Hunter's Eyes of the Beast
-* The Orb Razorgore the Untamed's encounter
+* The Orb in Razorgore the Untamed's encounter
 * The Orbs in the Kil'jaeden encounter
 
 It works with default Blizzard action bars, and should work with any action bar addon that uses Blizzard's default ActionButtons 1-10 for its primary action bar. I use it with Dominos.
