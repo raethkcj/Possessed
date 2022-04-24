@@ -348,6 +348,10 @@ handler:SetScript("OnEvent", function(self, event)
 	end
 end)
 
+-- Fully secure handling of Teron Gorefiend's Shadow of Death
+local teron_opt = "[@player,dead] true; false"
+local teron = prefix .. "-teron"
+
 if not InCombatLockdown() then
 	for i = 1, NUM_PET_ACTION_SLOTS do
 		local buttonName = "ActionButton" .. i
@@ -398,6 +402,7 @@ if not InCombatLockdown() then
 		local possessing = "%s"
 		local channeling = "%s"
 		local noncombat = "%s"
+		local teron = "%s"
 		local NUM_PET_ACTION_SLOTS = %d
 
 		if name == possessing then
@@ -419,7 +424,7 @@ if not InCombatLockdown() then
 					button:SetAttribute("showgrid", 1)
 
 					button:Show()
-				elseif defaults[i] then
+				elseif defaults[i] and defaults[i].updated then
 					button:SetAttribute("type", defaults[i].type)
 					button:SetAttribute("action", defaults[i].action)
 					button:SetAttribute("unit", defaults[i].unit)
@@ -429,9 +434,13 @@ if not InCombatLockdown() then
 			end
 		elseif name == channeling or name == noncombat then
 			self:SetAttribute(possessing, value)
+		elseif name == teron then
+			-- We are dead but our pet is alive
+			self:SetAttribute(possessing, value == "true" and not UnitIsDead("pet"))
 		end
-	]]):format(possessing, channeling, noncombat, NUM_PET_ACTION_SLOTS))
+	]]):format(possessing, channeling, noncombat, teron, NUM_PET_ACTION_SLOTS))
 
 	RegisterAttributeDriver(handler, channeling, channel_opt)
 	RegisterAttributeDriver(handler, noncombat, noncombat_opt)
+	RegisterAttributeDriver(handler, teron, teron_opt)
 end
