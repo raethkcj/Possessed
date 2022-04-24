@@ -3,6 +3,7 @@
 ## Title: Possessed
 ## Author: raethkcj
 ## SavedVariables: PossessedDB
+## X-Wago-ID: WqKQLD6x
 ## X-WoWI-ID: 26279
 
 Possessed.lua
