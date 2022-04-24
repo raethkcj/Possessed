@@ -2,29 +2,7 @@ local addonName, addonTable = ...
 
 local handler = CreateFrame("Frame", addonName .. "SecureHandler", nil, "SecureHandlerAttributeTemplate")
 
-local channels = {
-	[GetSpellInfo(605)]   = true, -- Mind Control (Priest)
-	[GetSpellInfo(1002)]  = true, -- Eyes of the Beast (Hunter)
-	[GetSpellInfo(19832)] = true, -- Possess (Razorgore the Untamed)
-	[GetSpellInfo(45839)] = true, -- Vengeance of the Blue Flight (Kil'jaeden)
-}
-
-local channel_opt = ""
-local channels_enabled = false
-for spell, enabled in pairs(channels) do
-	if enabled then
-		channels_enabled = true
-		channel_opt = channel_opt .. string.format("[channeling:%s]", spell)
-	end
-end
-if channels_enabled then
-	channel_opt = channel_opt .. " true; false"
-else
-	channel_opt = "false"
-end
-
 local prefix = addonName:lower()
-local channeling = prefix .. "-channeling"
 local possessing = prefix .. "-possessing"
 
 --Hybrid reimplementation of ActionButton.lua and PetActionBarFrame.lua
@@ -83,7 +61,7 @@ local function PossessedActionButton_StopFlash(self)
 end
 
 local function PossessedActionButton_IsFlashing(self)
-	return self.possessed_flashing == 1 
+	return self.possessed_flashing == 1
 end
 
 local function PossessedActionButton_UpdateFlash(self)
@@ -146,22 +124,10 @@ local PossessedActionButton_SetTooltip
 local hookedFrames = {}
 local function PetAction_OnEvent(self, event, ...)
 	local action = self:GetAttribute("action")
-	--if not PetActionEvents[event] then 
-	--	return
 	if event == "PET_BAR_UPDATE_COOLDOWN" or event == "ACTIONBAR_UPDATE_COOLDOWN" then
 		PossessedActionButton_UpdateCooldown(self)
 	else
 		PossessedActionButton_Update(self)
-	end
-end
-
-local function ActionBarButtonEventsFrame_UnregisterFrame(frame)
-	local t = ActionBarButtonEventsFrame.frames
-	for i,v in ipairs(t) do
-		if v == frame then
-			tremove(t, i)
-			return
-		end
 	end
 end
 
@@ -337,42 +303,85 @@ local function PossessedActionButton_OnUpdate(self, elapsed)
 	end
 end
 
-if not InCombatLockdown() then
+-- Fully secure handling of specific channeled possession spells
+local channels = {
+	[GetSpellInfo(605)]   = true, -- Mind Control (Priest)
+	[GetSpellInfo(1002)]  = true, -- Eyes of the Beast (Hunter)
+	[GetSpellInfo(19832)] = true, -- Possess (Razorgore the Untamed)
+	[GetSpellInfo(45839)] = true, -- Vengeance of the Blue Flight (Kil'jaeden)
+}
 
+local channel_opt = ""
+local channels_enabled = false
+for spell, enabled in pairs(channels) do
+	if enabled then
+		channels_enabled = true
+		channel_opt = channel_opt .. string.format("[channeling:%s]", spell)
+	end
+end
+if channels_enabled then
+	channel_opt = channel_opt .. " true; false"
+else
+	channel_opt = "false"
+end
+local channeling = prefix .. "-channeling"
+
+-- Partially secure handling of possessions started
+-- while not in combat. Falls back to regular action bars if the
+-- pet dies or despawns while you are in combat.
+-- This should handle most open-world quest items without
+-- needing to maintain a list.
+-- If something *else* happens to the pet and you remain in combat,
+-- we can't securely reset the action bars until you leave combat.
+local noncombat_opt = "[@pet,noexists][@pet,dead] false"
+local noncombat = prefix .. "-noncombat"
+
+handler:RegisterUnitEvent("UNIT_PET", "player")
+handler:RegisterEvent("PLAYER_REGEN_DISABLED")
+handler:SetScript("OnEvent", function(self, event)
+	if not InCombatLockdown() then
+		if event == "UNIT_PET"
+		or event == "PLAYER_REGEN_DISABLED" and handler:GetAttribute(possessing) == "true"
+		then
+			handler:SetAttribute(noncombat, tostring(UnitIsPossessed("pet")))
+		end
+	end
+end)
+
+if not InCombatLockdown() then
 	for i = 1, NUM_PET_ACTION_SLOTS do
 		local buttonName = "ActionButton" .. i
 		local button = _G[buttonName]
 		handler:SetFrameRef(buttonName, _G[buttonName])
 
 		-- Post-hook most of the scripts in ActionBarFrame.xml,
-		-- so that we run after they do 
+		-- so that we run after they do
 		button:HookScript("OnAttributeChanged", function(self, name, value)
-			if not handler:GetAttribute(possessing) then return end
+			if handler:GetAttribute(possessing) ~= "true" then return end
 			PossessedActionButton_UpdateAction(self, name, value)
 		end)
 
 		button:HookScript("OnEnter", function(self)
-			if not handler:GetAttribute(possessing) then return end
+			if handler:GetAttribute(possessing) ~= "true" then return end
 			PossessedActionButton_UpdateAction(self, true)
 			PossessedActionButton_SetTooltip(self);
 		end)
 
 		button:HookScript("OnUpdate", function(self, elapsed)
-			if not handler:GetAttribute(possessing) then return end
+			if handler:GetAttribute(possessing) ~= "true" then return end
 			PossessedActionButton_OnUpdate(self, elapsed)
 		end)
 	end
 
-	local defaultLockActionBars;
 	handler:HookScript("OnAttributeChanged", function(self, name, value)
 		if name == possessing then
 			for i = 1, NUM_PET_ACTION_SLOTS do
 				local buttonName = "ActionButton" .. i
 				local button = _G[buttonName]
 
-				if value then
+				if value == "true" then
 					PetActionEvents_RegisterFrame(button)
-				else
+				elseif value == "false" then
 					PetActionEvents_UnregisterFrame(button)
 				end
 
@@ -388,21 +397,21 @@ if not InCombatLockdown() then
 	handler:SetAttribute("_onattributechanged", ([[ -- self, name, value
 		local possessing = "%s"
 		local channeling = "%s"
+		local noncombat = "%s"
 		local NUM_PET_ACTION_SLOTS = %d
 
-		if name == channeling and value == "true" then
-			self:SetAttribute(possessing, true)
-		elseif name == channeling then
-			self:SetAttribute(possessing, false)
-		elseif name == possessing then
+		if name == possessing then
 			for i = 1, NUM_PET_ACTION_SLOTS do
 				local button = self:GetFrameRef("ActionButton" .. i)
-				if value then
-					defaults[i] = defaults[i] or newtable()
-					defaults[i].type = button:GetAttribute("type")
-					defaults[i].action = button:GetAttribute("action")
-					defaults[i].unit = button:GetAttribute("unit")
-					defaults[i].showgrid = button:GetAttribute("showgrid")
+				if value == "true" then
+					if not defaults[i] or not defaults[i].updated then
+						defaults[i] = defaults[i] or newtable()
+						defaults[i].type = button:GetAttribute("type")
+						defaults[i].action = button:GetAttribute("action")
+						defaults[i].unit = button:GetAttribute("unit")
+						defaults[i].showgrid = button:GetAttribute("showgrid")
+						defaults[i].updated = true
+					end
 
 					button:SetAttribute("type", "pet")
 					button:SetAttribute("action", i)
@@ -415,10 +424,14 @@ if not InCombatLockdown() then
 					button:SetAttribute("action", defaults[i].action)
 					button:SetAttribute("unit", defaults[i].unit)
 					button:SetAttribute("showgrid", defaults[i].showgrid)
+					defaults[i].updated = false
 				end
 			end
+		elseif name == channeling or name == noncombat then
+			self:SetAttribute(possessing, value)
 		end
-	]]):format(possessing, channeling, NUM_PET_ACTION_SLOTS))
+	]]):format(possessing, channeling, noncombat, NUM_PET_ACTION_SLOTS))
 
 	RegisterAttributeDriver(handler, channeling, channel_opt)
+	RegisterAttributeDriver(handler, noncombat, noncombat_opt)
 end
