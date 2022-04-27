@@ -436,7 +436,8 @@ if not InCombatLockdown() then
 			self:SetAttribute(possessing, value)
 		elseif name == teron then
 			-- We are dead but our pet is alive
-			self:SetAttribute(possessing, value == "true" and not UnitIsDead("pet"))
+			local isPossessing = tostring(value == "true" and not UnitIsDead("pet"))
+			self:SetAttribute(possessing, isPossessing)
 		end
 	]]):format(possessing, channeling, noncombat, teron, NUM_PET_ACTION_SLOTS))
 
