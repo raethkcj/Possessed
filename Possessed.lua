@@ -326,6 +326,11 @@ else
 end
 local channeling = prefix .. "-channeling"
 
+-- Karazhan Chess Event
+handler:RegisterEvent("ENCOUNTER_START")
+local chess = prefix .. "-chess"
+local chess_opt = "[pet] true; false]"
+
 -- Partially secure handling of possessions started
 -- while not in combat. Falls back to regular action bars if the
 -- pet dies or despawns while you are in combat.
@@ -338,12 +343,18 @@ local noncombat = prefix .. "-noncombat"
 
 handler:RegisterUnitEvent("UNIT_PET", "player")
 handler:RegisterEvent("PLAYER_REGEN_DISABLED")
-handler:SetScript("OnEvent", function(self, event)
+handler:SetScript("OnEvent", function(self, event, ...)
 	if not InCombatLockdown() then
 		if event == "UNIT_PET"
 		or event == "PLAYER_REGEN_DISABLED" and handler:GetAttribute(possessing) == "true"
 		then
 			handler:SetAttribute(noncombat, tostring(UnitIsPossessed("pet")))
+		elseif event == "ENCOUNTER_START" and (...) == 660 then
+			RegisterAttributeDriver(handler, chess, chess_opt)
+			self:RegisterEvent("PLAYER_REGEN_ENABLED")
+		elseif event == "PLAYER_REGEN_ENABLED" then
+			UnregisterAttributeDriver(handler, chess)
+			self:UnregisterEvent("PLAYER_REGEN_ENABLED")
 		end
 	end
 end)
@@ -403,6 +414,7 @@ if not InCombatLockdown() then
 		local channeling = "%s"
 		local noncombat = "%s"
 		local teron = "%s"
+		local chess = "%s"
 		local NUM_PET_ACTION_SLOTS = %d
 
 		if name == possessing then
@@ -438,8 +450,14 @@ if not InCombatLockdown() then
 			-- We are dead but our pet is alive
 			local isPossessing = tostring(value == "true" and not UnitIsDead("pet"))
 			self:SetAttribute(possessing, isPossessing)
+		elseif name == chess then
+			-- Check that creatureFamily is nil to confirm that
+			-- we have a chess piece instead of a hunter/lock pet
+			local creatureFamily, name = PlayerPetSummary()
+			local isPossessing = tostring(value == "true" and (not creatureFamily)))
+			self:SetAttribute(possessing, isPossessing)
 		end
-	]]):format(possessing, channeling, noncombat, teron, NUM_PET_ACTION_SLOTS))
+	]]):format(possessing, channeling, noncombat, teron, chess, NUM_PET_ACTION_SLOTS))
 
 	RegisterAttributeDriver(handler, channeling, channel_opt)
 	RegisterAttributeDriver(handler, noncombat, noncombat_opt)
