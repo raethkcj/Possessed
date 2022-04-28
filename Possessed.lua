@@ -454,7 +454,7 @@ if not InCombatLockdown() then
 			-- Check that creatureFamily is nil to confirm that
 			-- we have a chess piece instead of a hunter/lock pet
 			local creatureFamily, name = PlayerPetSummary()
-			local isPossessing = tostring(value == "true" and (not creatureFamily)))
+			local isPossessing = tostring(value == "true" and (not creatureFamily))
 			self:SetAttribute(possessing, isPossessing)
 		end
 	]]):format(possessing, channeling, noncombat, teron, chess, NUM_PET_ACTION_SLOTS))
