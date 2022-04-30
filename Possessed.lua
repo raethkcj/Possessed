@@ -448,7 +448,7 @@ if not InCombatLockdown() then
 			self:SetAttribute(possessing, value)
 		elseif name == teron then
 			-- We are dead but our pet is alive
-			local isPossessing = tostring(value == "true" and not UnitIsDead("pet"))
+			local isPossessing = tostring(value == "true" and UnitExists("pet") and not UnitIsDead("pet"))
 			self:SetAttribute(possessing, isPossessing)
 		elseif name == chess then
 			-- Check that creatureFamily is nil to confirm that
